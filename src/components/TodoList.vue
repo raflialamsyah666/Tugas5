@@ -1,152 +1,227 @@
 <template>
-  <div class="container">
-    <h1>Todo List</h1>
-    <form @submit.prevent="addTask" class="form">
-      <input
-        v-model="newTodo"
-        placeholder="Tambahkan tugas"
-      />
-      <button type="submit">Tambah</button>
-    </form>
+  <div class="app">
+    <div class="todo-container">
+      <h1>Todo List</h1>
+      <div class="input-group">
+        <input
+          type="text"
+          v-model="newTask"
+          @keyup.enter="addTask"
+          placeholder="Tambahkan tugas"
+        />
+        <button @click="addTask">Tambah</button>
+      </div>
 
-    <transition-group name="fade" tag="ul" class="todo-list">
-      <li v-for="todo in todoStore.todos" :key="todo.id" class="todo-item">
-        <span
-          :class="{ done: todo.done }"
-          @click="todoStore.toggleDone(todo.id)"
-          class="todo-text"
+      <div class="filters">
+        <button
+          :class="{ active: filter === 'all' }"
+          @click="filter = 'all'"
+        >Show All</button>
+        <button
+          :class="{ active: filter === 'done' }"
+          @click="filter = 'done'"
+        >Done</button>
+        <button
+          :class="{ active: filter === 'undone' }"
+          @click="filter = 'undone'"
+        >Undone</button>
+      </div>
+
+      <p class="status">Tugas belum selesai: {{ incompleteCount }}</p>
+
+      <transition-group name="list" tag="ul" class="todo-list">
+        <li
+          v-for="task in filteredTasks"
+          :key="task.id"
+          :class="{ completed: task.completed }"
         >
-          {{ todo.text }}
-        </span>
-        <button @click="todoStore.removeTodo(todo.id)" class="delete-btn">🗑️</button>
-      </li>
-    </transition-group>
-
-    <p class="counter">Tugas belum selesai: {{ todoStore.incompleteCount }}</p>
+          <span @click="toggleTask(task)">
+            {{ task.text }}
+          </span>
+          <button class="delete" @click="deleteTask(task.id)">✖</button>
+        </li>
+      </transition-group>
+    </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { useTodoStore } from '../stores/todo'
-
-const todoStore = useTodoStore()
-const newTodo = ref('')
-
-function addTask() {
-  if (newTodo.value.trim() !== '') {
-    todoStore.addTodo(newTodo.value)
-    newTodo.value = ''
-  }
-}
+<script>
+export default {
+  data() {
+    return {
+      newTask: "",
+      tasks: [],
+      filter: "all",
+    };
+  },
+  computed: {
+    incompleteCount() {
+      return this.tasks.filter((task) => !task.completed).length;
+    },
+    filteredTasks() {
+      if (this.filter === "all") return this.tasks;
+      if (this.filter === "done") return this.tasks.filter((t) => t.completed);
+      if (this.filter === "undone") return this.tasks.filter((t) => !t.completed);
+    },
+  },
+  methods: {
+    addTask() {
+      if (this.newTask.trim() !== "") {
+        this.tasks.push({
+          id: Date.now(),
+          text: this.newTask,
+          completed: false,
+        });
+        this.newTask = "";
+      }
+    },
+    toggleTask(task) {
+      task.completed = !task.completed;
+    },
+    deleteTask(id) {
+      this.tasks = this.tasks.filter((t) => t.id !== id);
+    },
+  },
+};
 </script>
 
 <style scoped>
-/* container styling */
-.container {
-  max-width: 500px;
-  margin: 40px auto;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+body {
+  margin: 0;
+  background: url('@/assets/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+  font-family: 'Poppins', sans-serif;
+}
+
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.todo-container {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  width: 400px;
+  text-align: center;
 }
 
 h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: 1rem;
 }
 
-/* form styling */
-.form {
+.input-group {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-input {
+.input-group input {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ccc;
   transition: border 0.3s;
 }
-input:focus {
-  outline: none;
+
+.input-group input:focus {
   border-color: #007bff;
+  outline: none;
 }
-button {
+
+.input-group button {
   background-color: #007bff;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background 0.3s;
 }
-button:hover {
+
+.input-group button:hover {
   background-color: #0056b3;
 }
 
-/* todo list styling */
+.filters {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.filters button {
+  background-color: #e0e0e0;
+  border: none;
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.filters button.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.filters button:hover {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.status {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
 .todo-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
-.todo-item {
+
+.todo-list li {
+  background-color: #f9f9f9;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  background: #00f7ff6c;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: transform 0.2s;
-}
-.todo-item:hover {
-  transform: scale(1.02);
-}
-
-.todo-text {
+  align-items: center;
+  transition: transform 0.3s, opacity 0.3s;
   cursor: pointer;
-  transition: color 0.3s, text-decoration 0.3s;
-}
-.todo-text.done {
-  text-decoration: line-through;
-  color: #888;
 }
 
-/* delete button styling */
-.delete-btn {
+.todo-list li:hover {
+  background-color: #e9e9e9;
+}
+
+.todo-list li.completed span {
+  text-decoration: line-through;
+  color: #aaa;
+}
+
+.delete {
   background: transparent;
   border: none;
-  font-size: 18px;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-.delete-btn:hover {
   color: red;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
-.counter {
-  margin-top: 10px;
-  text-align: center;
-  color: #666;
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
 }
-
-/* transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: all 0.4s ease;
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
 }
-.fade-enter-from, .fade-leave-to {
+.list-leave-to {
   opacity: 0;
   transform: translateY(10px);
-}
-.fade-enter-to, .fade-leave-from {
-  opacity: 1;
-  transform: translateY(0);
 }
 </style>
